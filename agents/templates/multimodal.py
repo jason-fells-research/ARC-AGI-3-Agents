@@ -12,12 +12,12 @@ from typing import Any, List, Optional, Sequence, Tuple
 
 import numpy as np
 import openai
+from arcengine import FrameData, GameAction, GameState
 from openai import OpenAI as OpenAIClient
 from openai.types.chat import ChatCompletion
 from PIL import Image
 
 from ..agent import Agent
-from ..structs import FrameData, GameAction, GameState
 
 logger = logging.getLogger()
 
@@ -178,6 +178,8 @@ def get_human_inputs_from(available_actions: list[GameAction]) -> str:
 class MultiModalLLM(Agent):
     """An agent that always selects actions at random."""
 
+    # MAX_ACTIONS = 100
+    # MODEL: str = "google/gemini-3-pro-preview"
     MAX_ACTIONS = 40
     MODEL: str = "gpt-4o-mini"
     # MODEL: str = "nectarine-alpha-new-reasoning-effort-2025-07-25"
@@ -304,7 +306,7 @@ class MultiModalLLM(Agent):
 
     def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
         """Decide if the agent is done playing or not."""
-        return latest_frame.state == GameState.WIN
+        return latest_frame.state == GameState.WIN  # type: ignore[no-any-return]
 
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
@@ -318,6 +320,10 @@ class MultiModalLLM(Agent):
             return GameAction.RESET
 
         client = OpenAIClient(api_key=os.environ.get("OPENAI_SECRET_KEY", ""))
+        # client = OpenAIClient(
+        #     base_url="https://openrouter.ai/api/v1",
+        #     api_key=os.environ.get("OPEN_ROUTER_KEY", "")
+        # )
         # client = OpenAIClient(
         #     api_key=os.environ.get("GROK_API_KEY", ""),
         #     base_url="https://api.x.ai/v1"
@@ -346,7 +352,7 @@ class MultiModalLLM(Agent):
         if self._previous_action:
             level_complete = (
                 "NEW LEVEL!!!! - Whatever you did must have beeon good!"
-                if latest_frame.score > self._previous_score
+                if latest_frame.levels_completed > self._previous_score
                 else ""
             )
 
@@ -406,7 +412,7 @@ class MultiModalLLM(Agent):
                         "content": msg_parts,
                     },
                 ],
-                # reasoning_effort=self.REASONING_EFFORT,
+                # extra_body={"reasoning": {"enabled": True}}
             )
             analysis_message = response.choices[0].message.content
             logger.info(f"Assistant - Analysis: {analysis_message}")
@@ -441,6 +447,7 @@ class MultiModalLLM(Agent):
                         ],
                     },
                 ],
+                # extra_body={"reasoning": {"enabled": True}}
                 # reasoning_effort=self.REASONING_EFFORT,
             )
         except openai.BadRequestError as e:
@@ -479,6 +486,7 @@ class MultiModalLLM(Agent):
                         ],
                     },
                 ],
+                # extra_body={"reasoning": {"enabled": True}}
                 # reasoning_effort=self.REASONING_EFFORT,
             )
         except openai.BadRequestError as e:
@@ -518,7 +526,7 @@ class MultiModalLLM(Agent):
 
         self._previous_action = desired_action
         self._previous_images = image_blocks
-        self._previous_score = latest_frame.score
+        self._previous_score = latest_frame.levels_completed
 
         return action
 

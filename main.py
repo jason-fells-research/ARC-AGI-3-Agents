@@ -169,7 +169,7 @@ def main() -> None:
         return
 
     # Start with Empty tags, "agent" and agent name will be added by the Swarm later
-    tags = []
+    tags: list[str] = []
 
     # Append user-provided tags if any
     if args.tags:

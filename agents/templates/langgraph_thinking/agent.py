@@ -1,12 +1,12 @@
 import sqlite3
 from typing import Any, cast
 
+from arcengine import FrameData, GameAction, GameState
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import Pregel
 from langgraph.store.sqlite import SqliteStore
 
 from ...agent import Agent
-from ...structs import FrameData, GameAction, GameState
 from .nodes import act, analyze_frame_delta, check_key, init
 from .schema import LLM, AgentState
 
@@ -21,7 +21,6 @@ class LangGraphThinking(Agent):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-
         self.agent_state = {
             "action": None,
             "context": [],
@@ -29,9 +28,10 @@ class LangGraphThinking(Agent):
             "llm": kwargs.get("llm", LLM.OPENAI_GPT_41),
             "thoughts": [],
             "frames": [],
-            "latest_frame": None,  # type: ignore[typeddict-item]
+            "latest_frame": None,
             "previous_frame": None,
         }
+
         self.workflow = self._build_workflow()
 
     @property

@@ -5,6 +5,7 @@ description = "ARC-AGI-3-Agents"
 readme = "readme.md"
 requires-python = ">=3.12"
 dependencies = [
+    "arc-agi>=0.9.1",
     "dotenv>=0.9.9",
     "langchain[openai]>=0.3.27",
     "langgraph>=0.6.3",
@@ -14,7 +15,7 @@ dependencies = [
     "pillow>=11.2.1",
     "pydantic>=2.11.7",
     "requests>=2.32.4",
-    "smolagents>=1.20.0"
+    "smolagents>=1.20.0",
 ]
 
 [dependency-groups]

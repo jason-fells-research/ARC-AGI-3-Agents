@@ -1,9 +1,8 @@
 from enum import Enum
 from typing import Annotated, Optional, TypedDict
 
+from arcengine import FrameData, GameAction
 from langchain_core.messages import BaseMessage
-
-from ...structs import FrameData, GameAction
 
 
 class LLM(Enum):

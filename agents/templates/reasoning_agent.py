@@ -5,11 +5,11 @@ import logging
 import textwrap
 from typing import Any, Dict, List, Literal
 
+from arcengine import FrameData, GameAction
 from openai import OpenAI
 from PIL import Image, ImageDraw, ImageFont
 from pydantic import BaseModel, Field
 
-from ..structs import FrameData, GameAction
 from .llm_agents import ReasoningLLM
 
 logger = logging.getLogger(__name__)
