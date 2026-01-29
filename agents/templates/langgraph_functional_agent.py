@@ -9,6 +9,7 @@ from typing import Any, TypedDict, TypeVar, cast
 
 import langsmith as ls
 import PIL
+from arcengine import FrameData, GameAction
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.func import entrypoint
 from langgraph.pregel import Pregel
@@ -19,7 +20,6 @@ from openai.types.chat import ChatCompletionMessage
 from agents.templates.llm_agents import LLM
 
 from ..agent import Agent
-from ..structs import FrameData, GameAction
 
 logger = logging.getLogger(__name__)
 

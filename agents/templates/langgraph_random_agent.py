@@ -2,11 +2,11 @@ import random
 import time
 from typing import Any, TypedDict
 
+from arcengine import FrameData, GameAction, GameState
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import Pregel
 
 from ..agent import Agent
-from ..structs import FrameData, GameAction, GameState
 
 
 class RandomAgentState(TypedDict):

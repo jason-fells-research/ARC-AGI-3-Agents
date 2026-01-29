@@ -4,10 +4,10 @@ This file contains various nodes you can add to a LangGraph workflow for solving
 
 import random
 
+from arcengine import GameAction, GameState
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langgraph.config import get_store
 
-from ...structs import GameAction, GameState
 from .llm import get_llm
 from .prompts import (
     build_frame_delta_prompt,

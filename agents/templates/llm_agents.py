@@ -5,10 +5,10 @@ import textwrap
 from typing import Any, Optional
 
 import openai
+from arcengine import FrameData, GameAction, GameState
 from openai import OpenAI as OpenAIClient
 
 from ..agent import Agent
-from ..structs import FrameData, GameAction, GameState
 
 logger = logging.getLogger()
 

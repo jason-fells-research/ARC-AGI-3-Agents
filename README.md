@@ -32,13 +32,24 @@ uv run main.py --agent=random --game=ls20
 For more information, see the [documentation](https://three.arcprize.org/docs#quick-start) or the [tutorial video](https://youtu.be/xEVg9dcJMkw).
 
 ## Changelog
+## [0.9.3] - 2026-01-29
+**Note: This will be a breaking change is you use the fields outline below**
+
+### Added
+- `FrameData` had two field names changes. 
+  - `score` changed to `levels_completed`
+  - `win_score` changed to `win_levels`
+- Updated to use the new [ARC-AGI](https://github.com/arcprize/ARC-AGI) tool
+  - Allows local execution of environments
+  - Allows the creation of your own environments, see [Creating an Environment](https://docs.arcprize.org/add_game)
+  - If you want to continue to use the online API/Replays set `ONLINE_ONLY` to `True` in `.env.example`
+
 ## [0.9.2] - 2025-08-19
 
 ### Added
 - `available_actions` to `FrameData`
 - `ACTION7` as possible `GameAction`
 
-## Changelog
 ## [0.9.1] - 2025-07-18
 
 Initial Release
