@@ -1,0 +1,164 @@
+import json
+import logging
+from typing import Any, TYPE_CHECKING
+
+from arcengine import FrameData
+from claude_agent_sdk import tool, create_sdk_mcp_server
+
+if TYPE_CHECKING:
+    from .templates.claude_agents import ClaudeCodeAgent
+
+logger = logging.getLogger()
+
+
+def format_frame_info(agent: "ClaudeCodeAgent") -> str:
+    if not agent.frames:
+        return "No frame data available."
+    
+    latest_frame = agent.frames[-1]
+    
+    available_actions_str = ", ".join(
+        [f"ACTION{a}" if a > 0 else "RESET" for a in latest_frame.available_actions]
+    )
+    
+    return json.dumps({
+        "state": latest_frame.state.value,
+        "score": latest_frame.score,
+        "levels_completed": latest_frame.levels_completed,
+        "available_actions": available_actions_str,
+    }, indent=2)
+
+
+def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
+    @tool(
+        "reset_game",
+        "Reset the game to its initial state. Use this when you want to start over from the beginning.",
+        {}
+    )
+    async def reset_game(args: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"RESET action will be executed. Current state:\n{format_frame_info(agent)}"
+            }]
+        }
+    
+    @tool(
+        "action1_move_up",
+        "Execute ACTION1 (typically move up). Check available_actions to ensure this action is allowed.",
+        {}
+    )
+    async def action1_move_up(args: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"ACTION1 will be executed. Current state:\n{format_frame_info(agent)}"
+            }]
+        }
+    
+    @tool(
+        "action2_move_down",
+        "Execute ACTION2 (typically move down). Check available_actions to ensure this action is allowed.",
+        {}
+    )
+    async def action2_move_down(args: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"ACTION2 will be executed. Current state:\n{format_frame_info(agent)}"
+            }]
+        }
+    
+    @tool(
+        "action3_move_left",
+        "Execute ACTION3 (typically move left). Check available_actions to ensure this action is allowed.",
+        {}
+    )
+    async def action3_move_left(args: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"ACTION3 will be executed. Current state:\n{format_frame_info(agent)}"
+            }]
+        }
+    
+    @tool(
+        "action4_move_right",
+        "Execute ACTION4 (typically move right). Check available_actions to ensure this action is allowed.",
+        {}
+    )
+    async def action4_move_right(args: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"ACTION4 will be executed. Current state:\n{format_frame_info(agent)}"
+            }]
+        }
+    
+    @tool(
+        "action5_interact",
+        "Execute ACTION5 (typically interact with environment). Check available_actions to ensure this action is allowed.",
+        {}
+    )
+    async def action5_interact(args: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"ACTION5 will be executed. Current state:\n{format_frame_info(agent)}"
+            }]
+        }
+    
+    @tool(
+        "action6_click",
+        "Execute ACTION6 with coordinates (x, y). Coordinates must be in range 0-63. Check available_actions to ensure this action is allowed.",
+        {
+            "x": int,
+            "y": int
+        }
+    )
+    async def action6_click(args: dict[str, Any]) -> dict[str, Any]:
+        x = args.get("x", 0)
+        y = args.get("y", 0)
+        
+        if not (0 <= x <= 63 and 0 <= y <= 63):
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": f"Invalid coordinates: x={x}, y={y}. Must be in range 0-63."
+                }]
+            }
+        
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"ACTION6 will be executed at ({x}, {y}). Current state:\n{format_frame_info(agent)}"
+            }]
+        }
+    
+    @tool(
+        "action7_undo",
+        "Execute ACTION7 (typically undo the previous action). Check available_actions to ensure this action is allowed.",
+        {}
+    )
+    async def action7_undo(args: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"ACTION7 (undo) will be executed. Current state:\n{format_frame_info(agent)}"
+            }]
+        }
+    
+    return create_sdk_mcp_server(
+        name="arc-game-tools",
+        version="1.0.0",
+        tools=[
+            reset_game,
+            action1_move_up,
+            action2_move_down,
+            action3_move_left,
+            action4_move_right,
+            action5_interact,
+            action6_click,
+            action7_undo,
+        ]
+    )
