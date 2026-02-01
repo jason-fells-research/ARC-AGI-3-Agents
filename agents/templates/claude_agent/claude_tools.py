@@ -29,12 +29,33 @@ def format_frame_info(agent: "ClaudeCodeAgent") -> str:
 
 
 def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
+    def check_action_available(action_value: int) -> tuple[bool, str]:
+        latest_frame = agent.current_frame
+        if not latest_frame or not latest_frame.available_actions:
+            return True, ""
+        
+        if action_value in latest_frame.available_actions:
+            return True, ""
+        
+        available = ", ".join([f"ACTION{a}" if a > 0 else "RESET" for a in latest_frame.available_actions])
+        return False, f"ERROR: ACTION{action_value} is not available in this game. Available actions: {available}"
+    
     @tool(
         "reset_game",
         "Reset the game to its initial state. Use this when you want to start over from the beginning.",
         {}
     )
     async def reset_game(args: dict[str, Any]) -> dict[str, Any]:
+        is_valid, error_msg = check_action_available(0)
+        if not is_valid:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": error_msg
+                }],
+                "isError": True
+            }
+        
         return {
             "content": [{
                 "type": "text",
@@ -44,10 +65,20 @@ def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
     
     @tool(
         "action1_move_up",
-        "Execute ACTION1 (typically move up). Check available_actions to ensure this action is allowed.",
+        "Execute ACTION1 (typically move up).",
         {}
     )
     async def action1_move_up(args: dict[str, Any]) -> dict[str, Any]:
+        is_valid, error_msg = check_action_available(1)
+        if not is_valid:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": error_msg
+                }],
+                "isError": True
+            }
+        
         return {
             "content": [{
                 "type": "text",
@@ -57,10 +88,20 @@ def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
     
     @tool(
         "action2_move_down",
-        "Execute ACTION2 (typically move down). Check available_actions to ensure this action is allowed.",
+        "Execute ACTION2 (typically move down).",
         {}
     )
     async def action2_move_down(args: dict[str, Any]) -> dict[str, Any]:
+        is_valid, error_msg = check_action_available(2)
+        if not is_valid:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": error_msg
+                }],
+                "isError": True
+            }
+        
         return {
             "content": [{
                 "type": "text",
@@ -70,10 +111,20 @@ def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
     
     @tool(
         "action3_move_left",
-        "Execute ACTION3 (typically move left). Check available_actions to ensure this action is allowed.",
+        "Execute ACTION3 (typically move left).",
         {}
     )
     async def action3_move_left(args: dict[str, Any]) -> dict[str, Any]:
+        is_valid, error_msg = check_action_available(3)
+        if not is_valid:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": error_msg
+                }],
+                "isError": True
+            }
+        
         return {
             "content": [{
                 "type": "text",
@@ -83,10 +134,20 @@ def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
     
     @tool(
         "action4_move_right",
-        "Execute ACTION4 (typically move right). Check available_actions to ensure this action is allowed.",
+        "Execute ACTION4 (typically move right).",
         {}
     )
     async def action4_move_right(args: dict[str, Any]) -> dict[str, Any]:
+        is_valid, error_msg = check_action_available(4)
+        if not is_valid:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": error_msg
+                }],
+                "isError": True
+            }
+        
         return {
             "content": [{
                 "type": "text",
@@ -96,10 +157,20 @@ def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
     
     @tool(
         "action5_interact",
-        "Execute ACTION5 (typically interact with environment). Check available_actions to ensure this action is allowed.",
+        "Execute ACTION5 (typically interact with environment).",
         {}
     )
     async def action5_interact(args: dict[str, Any]) -> dict[str, Any]:
+        is_valid, error_msg = check_action_available(5)
+        if not is_valid:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": error_msg
+                }],
+                "isError": True
+            }
+        
         return {
             "content": [{
                 "type": "text",
@@ -109,13 +180,23 @@ def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
     
     @tool(
         "action6_click",
-        "Execute ACTION6 with coordinates (x, y). Coordinates must be in range 0-63. Check available_actions to ensure this action is allowed.",
+        "Execute ACTION6 with coordinates (x, y). Coordinates must be in range 0-63.",
         {
             "x": int,
             "y": int
         }
     )
     async def action6_click(args: dict[str, Any]) -> dict[str, Any]:
+        is_valid, error_msg = check_action_available(6)
+        if not is_valid:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": error_msg
+                }],
+                "isError": True
+            }
+        
         x = args.get("x", 0)
         y = args.get("y", 0)
         
@@ -124,7 +205,8 @@ def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
                 "content": [{
                     "type": "text",
                     "text": f"Invalid coordinates: x={x}, y={y}. Must be in range 0-63."
-                }]
+                }],
+                "isError": True
             }
         
         return {
@@ -136,10 +218,20 @@ def create_arc_tools_server(agent: "ClaudeCodeAgent") -> Any:
     
     @tool(
         "action7_undo",
-        "Execute ACTION7 (typically undo the previous action). Check available_actions to ensure this action is allowed.",
+        "Execute ACTION7 (typically undo the previous action).",
         {}
     )
     async def action7_undo(args: dict[str, Any]) -> dict[str, Any]:
+        is_valid, error_msg = check_action_available(7)
+        if not is_valid:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": error_msg
+                }],
+                "isError": True
+            }
+        
         return {
             "content": [{
                 "type": "text",

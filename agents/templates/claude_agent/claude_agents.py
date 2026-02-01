@@ -298,6 +298,11 @@ class ClaudeCodeAgent(Agent):
         if tool_name in tool_map:
             action = tool_map[tool_name]
             
+            if self.current_frame and self.current_frame.available_actions:
+                if action.value not in self.current_frame.available_actions:
+                    logger.warning(f"Rejecting {action.name} (value={action.value}): not in available_actions {self.current_frame.available_actions}")
+                    return None
+            
             if action == GameAction.ACTION6:
                 x = tool_input.get("x", 0)
                 y = tool_input.get("y", 0)
