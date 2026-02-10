@@ -279,9 +279,6 @@ Formatting rules:
 - Put all carryover memory in `<memory>...</memory>` (this fully replaces previous memory)
 - Do not use tool calls or function calls
 - Do not output pseudo-code or plain text action descriptions outside these tags
-
-Hint: 
-You are currently playing with hints enabled. For the current game, the objective is to flip tiles to match constraint tiles. Constraint tiles have a special design of having 0 and 2 pixels, and their center defines which color it applies constraints on. For example, if it is 8, the 0 pixels around it show in which immediate locations there must be 8 tiles. non 0 values mean the center color is NOT in that location, so not 8 for this example.
             """.format(
                 available_actions_inline=available_actions_inline,
                 action_meanings=action_meanings,
