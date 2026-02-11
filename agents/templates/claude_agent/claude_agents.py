@@ -18,7 +18,7 @@ logger = logging.getLogger()
 
 
 class ClaudeCodeAgent(Agent):
-    MAX_ACTIONS: int = 80
+    MAX_ACTIONS: int = int(os.getenv("STEP_COUNT", 80))
     MODEL: str = "claude-sonnet-4-5-20250929"
     MAX_CONSECUTIVE_ERRORS: int = 3
     
