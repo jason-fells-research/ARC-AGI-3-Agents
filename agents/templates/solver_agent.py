@@ -205,7 +205,9 @@ def _get_neighbors(game: Any, pos: _Pos, push_map: _PushMap,
             continue
         if push_map and (nx, ny) in push_map:
             dest = push_map[(nx, ny)]
-            if 0 <= dest[0] <= 59 and 0 <= dest[1] <= 59 and not _is_wall(game, *dest):
+            if (0 <= dest[0] <= 59 and 0 <= dest[1] <= 59
+                    and not _is_wall(game, *dest)
+                    and not (extra_walls and dest in extra_walls)):
                 result.append((nm, dest[0], dest[1]))
         else:
             result.append((nm, nx, ny))
