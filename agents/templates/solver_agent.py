@@ -1,7 +1,7 @@
 """ETHRAEON Pure Programmatic Solver for ARC-AGI-3 (ls20).
 
 Zero API cost — time-expanded BFS for moving-trigger levels,
-A* static planner for fixed-trigger levels.
+BFS-based static planner for fixed-trigger levels.
 
 Pre-computes full action sequence in __init__ using a game clone.
 choose_action returns actions from the pre-computed queue.
@@ -59,17 +59,17 @@ def _build_push_map(game, start):
         else: continue
         wall_cx = plat.x + dx
         wall_cy = plat.y + dy
-        gguyvrkohc = 0
+        max_push_steps = 0
         for i in range(1, 13):
             nx = wall_cx + dx * plat.width * i
             ny = wall_cy + dy * plat.height * i
             if is_stop(nx, ny):
-                gguyvrkohc = max(0, i - 1)
+                max_push_steps = max(0, i - 1)
                 break
-        if gguyvrkohc <= 0:
+        if max_push_steps <= 0:
             continue
-        ddx = dx * plat.width * gguyvrkohc
-        ddy = dy * plat.height * gguyvrkohc
+        ddx = dx * plat.width * max_push_steps
+        ddy = dy * plat.height * max_push_steps
         for gx in xs:
             for gy in ys:
                 if (gx < plat.x + plat.width and gx + STEP > plat.x and
@@ -129,8 +129,8 @@ def _find_pickup_cells(game, start):
     return result
 
 
-def _can_reach_pickup(game, pos, sc_val, pickups, push_map, extra_walls=None):
-    max_moves = (sc_val - 1) // 2
+def _can_reach_pickup(game, pos, sc_val, pickups, push_map, extra_walls=None, sc_step=2):
+    max_moves = (sc_val - 1) // sc_step
     if max_moves < 0:
         return False
     for pu in pickups:
@@ -141,16 +141,16 @@ def _can_reach_pickup(game, pos, sc_val, pickups, push_map, extra_walls=None):
     return False
 
 
-def _plan_segment(game, start, goal, sc_val, pickups, push_map, extra_walls=None):
+def _plan_segment(game, start, goal, sc_val, pickups, push_map, extra_walls=None, sc_step=2):
     direct = _bfs_path(game, start, goal, push_map, extra_walls)
     if direct is None:
         return None, sc_val, None
-    dc = len(direct) * 2
+    dc = len(direct) * sc_step
     sa = sc_val - dc
     if sa >= SC_FLOOR:
         return direct, sa, None
     if 0 < sa < SC_FLOOR:
-        if _can_reach_pickup(game, goal, sa, pickups, push_map, extra_walls):
+        if _can_reach_pickup(game, goal, sa, pickups, push_map, extra_walls, sc_step):
             return direct, sa, None
     best_sa = -9999
     best = None
@@ -159,12 +159,12 @@ def _plan_segment(game, start, goal, sc_val, pickups, push_map, extra_walls=None
             p1 = _bfs_path(game, start, cell, push_map, extra_walls)
             if p1 is None:
                 continue
-            if sc_val - len(p1) * 2 <= 0:
+            if sc_val - len(p1) * sc_step <= 0:
                 continue
             p2 = _bfs_path(game, cell, goal, push_map, extra_walls)
             if p2 is None:
                 continue
-            sc_after = SC_REFILL - len(p2) * 2
+            sc_after = SC_REFILL - len(p2) * sc_step
             if sc_after <= 0:
                 continue
             if sc_after > best_sa:
@@ -201,7 +201,7 @@ def _remove_pickup(pickups, cell):
 
 def _plan_for_ordering(game, trigger_order, exits, pickups_init, start, sc_init,
                        r0, c0, s0, push_map, trigger_pickups=None, extra_walls=None,
-                       exit_indices=None):
+                       exit_indices=None, sc_step=2):
     moves = []
     cur = start
     sc_val = sc_init
@@ -228,7 +228,8 @@ def _plan_for_ordering(game, trigger_order, exits, pickups_init, start, sc_init,
                 continue
             tpos = (sprite_list[0].x, sprite_list[0].y)
             for v in range(n_visits):
-                path, new_sc, pu_used = _plan_segment(game, cur, tpos, sc_val, tpus, push_map, extra_walls)
+                path, new_sc, pu_used = _plan_segment(game, cur, tpos, sc_val, tpus, push_map, extra_walls,
+                                                       sc_step=sc_step)
                 if path is None:
                     return None
                 moves.extend(path)
@@ -246,12 +247,12 @@ def _plan_for_ordering(game, trigger_order, exits, pickups_init, start, sc_init,
                         for pu in tpus:
                             for cell in pu['cells']:
                                 p_out = _bfs_path(game, tpos, cell, push_map, extra_walls)
-                                if p_out is None or sc_val - len(p_out) * 2 <= 0:
+                                if p_out is None or sc_val - len(p_out) * sc_step <= 0:
                                     continue
                                 p_back = _bfs_path(game, cell, tpos, push_map, extra_walls)
                                 if p_back is None:
                                     continue
-                                sc_after = SC_REFILL - len(p_back) * 2
+                                sc_after = SC_REFILL - len(p_back) * sc_step
                                 if sc_after <= 0:
                                     continue
                                 moves.extend(p_out)
@@ -268,11 +269,12 @@ def _plan_for_ordering(game, trigger_order, exits, pickups_init, start, sc_init,
                         nb = _get_neighbors(game, tpos, push_map, extra_walls)
                         if nb:
                             moves.append(nb[0])
-                            sc_val -= 2
+                            sc_val -= sc_step
                             cur = (nb[0][1], nb[0][2])
 
         exit_pos = (e.x, e.y)
-        path, new_sc, pu_used = _plan_segment(game, cur, exit_pos, sc_val, pickups, push_map, extra_walls)
+        path, new_sc, pu_used = _plan_segment(game, cur, exit_pos, sc_val, pickups, push_map, extra_walls,
+                                               sc_step=sc_step)
         if path is None:
             return None
         moves.extend(path)
@@ -296,7 +298,7 @@ def _get_start_triggers(game):
 
 
 def _best_plan(game, exits_subset, pickups, start, sc_init, r0, c0, s0, push_map,
-               extra_walls=None, exit_indices=None):
+               extra_walls=None, exit_indices=None, sc_step=2):
     n = len(exits_subset)
     base_idx = exit_indices if exit_indices is not None else list(range(n))
     exit_perms = list(permutations(range(n))) if n <= 3 else [tuple(range(n))]
@@ -309,7 +311,7 @@ def _best_plan(game, exits_subset, pickups, start, sc_init, r0, c0, s0, push_map
         for perm in permutations(['rot', 'color', 'shape']):
             result = _plan_for_ordering(game, perm, ordered_exits, pickups, start, sc_init,
                                         r0, c0, s0, push_map, extra_walls=extra_walls,
-                                        exit_indices=ordered_idx)
+                                        exit_indices=ordered_idx, sc_step=sc_step)
             if result:
                 moves, final_sc = result
                 if final_sc > best_sc:
@@ -320,7 +322,8 @@ def _best_plan(game, exits_subset, pickups, start, sc_init, r0, c0, s0, push_map
                 tpus = [p for i, p in enumerate(pickups) if i != ri]
                 result = _plan_for_ordering(game, perm, ordered_exits, pickups, start, sc_init,
                                             r0, c0, s0, push_map, trigger_pickups=tpus,
-                                            extra_walls=extra_walls, exit_indices=ordered_idx)
+                                            extra_walls=extra_walls, exit_indices=ordered_idx,
+                                            sc_step=sc_step)
                 if result:
                     moves, final_sc = result
                     if final_sc > best_sc:
@@ -388,6 +391,7 @@ def _bfs_moving_triggers(game):
 
     exits = game.plrpelhym
     exit_pos_list = [(e.x, e.y) for e in exits]
+    exit_idx_map = {pos: idx for idx, pos in enumerate(exit_pos_list)}
     exit_req_list = [(game.ehwheiwsk[i], game.yjdexjsoa[i], game.ldxlnycps[i])
                      for i in range(len(exits))]
     num_exits = len(exits)
@@ -397,8 +401,13 @@ def _bfs_moving_triggers(game):
     pu_cells = []
     sorted_passable = sorted(all_passable)
     for sp in pu_sprites:
+        sp_x1, sp_y1 = sp.x, sp.y
+        sp_x2 = sp_x1 + getattr(sp, 'width', STEP)
+        sp_y2 = sp_y1 + getattr(sp, 'height', STEP)
         for pos in sorted_passable:
-            if pos[0] <= sp.x < pos[0] + STEP and pos[1] <= sp.y < pos[1] + STEP:
+            cell_x2 = pos[0] + STEP
+            cell_y2 = pos[1] + STEP
+            if pos[0] < sp_x2 and cell_x2 > sp_x1 and pos[1] < sp_y2 and cell_y2 > sp_y1:
                 pu_cells.append(pos)
                 break
 
@@ -463,7 +472,7 @@ def _bfs_moving_triggers(game):
 
             new_ev = ev
             if is_exit_cell:
-                exit_idx = exit_pos_list.index(effective_pos)
+                exit_idx = exit_idx_map[effective_pos]
                 if ev >> exit_idx & 1:
                     pass
                 else:
@@ -501,6 +510,7 @@ def _bfs_moving_triggers(game):
 
 def _solve_level(game, lvl_idx):
     sc_init = game._step_counter_ui.current_steps
+    sc_step = game._step_counter_ui.efipnixsvl
     start = (game.gudziatsk.x, game.gudziatsk.y)
     exits = game.plrpelhym
     pickups = _find_pickup_cells(game, start)
@@ -518,13 +528,13 @@ def _solve_level(game, lvl_idx):
         logger.warning(f"BFS solver failed for level {lvl_idx}, falling back to static")
 
     best_moves, best_sc, best_order = _best_plan(game, exits, pickups, start, sc_init,
-                                                  r0, c0, s0, push_map)
+                                                  r0, c0, s0, push_map, sc_step=sc_step)
     if len(exits) == 1:
         if best_moves is not None:
             return {'strategy': 'direct', 'phases': [best_moves]}
         return None
 
-    if best_moves and best_sc >= 2:
+    if best_moves and best_sc >= sc_step:
         return {'strategy': 'direct', 'phases': [best_moves]}
 
     direct_fallback = best_moves if best_sc > -200 else None
@@ -533,7 +543,7 @@ def _solve_level(game, lvl_idx):
 
     p0_moves, p0_sc, _ = _best_plan(game, [exits[0]], pickups, start, sc_init,
                                      r0, c0, s0, push_map, extra_walls={exit1_pos},
-                                     exit_indices=[0])
+                                     exit_indices=[0], sc_step=sc_step)
     if p0_moves is None:
         if direct_fallback is not None:
             return {'strategy': 'direct', 'phases': [direct_fallback]}
@@ -541,7 +551,8 @@ def _solve_level(game, lvl_idx):
 
     p1_moves, p1_sc, _ = _best_plan(game, [exits[1]], pickups, respawn_pos, SC_REFILL,
                                      start_r0, start_c0, start_s0, push_map,
-                                     extra_walls={exit0_pos}, exit_indices=[1])
+                                     extra_walls={exit0_pos}, exit_indices=[1],
+                                     sc_step=sc_step)
     if p1_moves is None:
         if direct_fallback is not None:
             return {'strategy': 'direct', 'phases': [direct_fallback]}
@@ -559,6 +570,7 @@ def _precompute_actions(game):
     """Solve all 7 levels on a game clone; return ordered list of GameActions."""
     actions = []
     for lvl in range(7):
+        frame = None
         plan = _solve_level(game, lvl)
         if plan is None:
             logger.error(f"Cannot plan level {lvl}")
@@ -683,6 +695,9 @@ class SolverAgent(Agent):
         return _precompute_actions(clone)
 
     def choose_action(self, frames: list[FrameData], current_frame: FrameData) -> GameAction:
+        if current_frame.state in (GameState.NOT_PLAYED, GameState.GAME_OVER):
+            logger.warning(f"[Solver] Game state {current_frame.state} — sending RESET")
+            return GameAction.RESET
         if self._queue_idx < len(self._action_queue):
             action = self._action_queue[self._queue_idx]
             self._queue_idx += 1
