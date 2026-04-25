@@ -12,6 +12,7 @@ from .templates.llm_agents import LLM, FastLLM, GuidedLLM, ReasoningLLM
 from .templates.multimodal import MultiModalLLM
 from .templates.claude_agent import ClaudeAgent
 from .templates.gemini_agent import GeminiAgent
+from .templates.solver_agent import SolverAgent
 from .templates.random_agent import Random
 from .templates.reasoning_agent import ReasoningAgent
 from .templates.smolagents import SmolCodingAgent, SmolVisionAgent
@@ -32,6 +33,7 @@ for rec in Recorder.list():
 AVAILABLE_AGENTS["reasoningagent"] = ReasoningAgent
 AVAILABLE_AGENTS["claudeagent"] = ClaudeAgent
 AVAILABLE_AGENTS["geminiagent"] = GeminiAgent
+AVAILABLE_AGENTS["solveragent"] = SolverAgent
 
 __all__ = [
     "Swarm",
@@ -53,4 +55,5 @@ __all__ = [
     "AVAILABLE_AGENTS",
     "MultiModalLLM",
     "GeminiAgent",
+    "SolverAgent",
 ]
