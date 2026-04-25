@@ -626,8 +626,33 @@ class SolverAgent(Agent):
             logger.error(f"[Solver] Pre-compute failed: {e}", exc_info=True)
 
     def _precompute(self) -> list[GameAction]:
-        game = self.arc_env._game
-        game_cls = type(game)
+        # Local mode: arc_env._game is the live game instance
+        game = getattr(self.arc_env, '_game', None)
+        if game is not None:
+            game_cls = type(game)
+            clone = game_cls()
+            clone.perform_action(ActionInput(id=GameAction.RESET), raw=True)
+            return _precompute_actions(clone)
+
+        # Remote/online mode: load game class from environment_files on disk
+        import importlib.util
+        import os
+        import pathlib
+        envs_dir = os.getenv("ENVIRONMENTS_DIR", "environment_files")
+        # game_id format: "ls20-9607627b"
+        parts = self.game_id.split("-", 1)
+        game_prefix = parts[0]   # e.g. "ls20"
+        game_hash = parts[1] if len(parts) > 1 else ""  # e.g. "9607627b"
+        # Derive class name: "ls20" → "Ls20"
+        class_name = game_prefix[0].upper() + game_prefix[1:]
+        game_file = pathlib.Path(envs_dir) / game_prefix / game_hash / f"{game_prefix}.py"
+        if not game_file.exists():
+            raise FileNotFoundError(f"Game file not found: {game_file}")
+        spec = importlib.util.spec_from_loader(game_prefix, loader=None)
+        module = importlib.util.module_from_spec(spec)
+        with open(game_file) as f:
+            exec(f.read(), module.__dict__)
+        game_cls = getattr(module, class_name)
         clone = game_cls()
         clone.perform_action(ActionInput(id=GameAction.RESET), raw=True)
         return _precompute_actions(clone)
