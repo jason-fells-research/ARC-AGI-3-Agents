@@ -8,6 +8,7 @@ choose_action returns actions from the pre-computed queue.
 """
 
 import logging
+import re
 from collections import deque
 from itertools import permutations
 from typing import Any
@@ -599,7 +600,7 @@ def _solve_level(game: Any, lvl_idx: int) -> dict[str, Any] | None:
 def _get_supported_level_count(game: Any) -> int:
     """Validate that this solver is used for a supported ls20 game; return level count."""
     game_id = getattr(game, 'game_id', None)
-    if game_id is not None and not str(game_id).startswith('ls20'):
+    if game_id is not None and not re.fullmatch(r'ls20(?:-[0-9a-fA-F]+)?', str(game_id)):
         msg = f"SolverAgent only supports ls20 games; got game_id={game_id!r}"
         logger.error(msg)
         raise ValueError(msg)

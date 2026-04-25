@@ -27,7 +27,7 @@ AVAILABLE_AGENTS: dict[str, Type[Agent]] = {
 for rec in Recorder.list():
     AVAILABLE_AGENTS[rec] = Playback
 
-# manually register agent aliases/overrides
+# explicitly register agent aliases/overrides for subclasses not auto-discovered
 AVAILABLE_AGENTS["reasoningagent"] = ReasoningAgent
 
 __all__ = [
