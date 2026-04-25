@@ -655,19 +655,28 @@ class SolverAgent(Agent):
         ]
         game_file = None
         for base in candidates:
-            p = base / rel_sub
-            if p.exists():
-                game_file = p
-                break
+            base_resolved = base.resolve(strict=False)
+            p = base_resolved / rel_sub
+            if not p.exists():
+                continue
+            try:
+                resolved_game_file = p.resolve(strict=True)
+                resolved_game_file.relative_to(base_resolved)
+            except (FileNotFoundError, ValueError):
+                continue
+            game_file = resolved_game_file
+            break
         if game_file is None:
-            searched = [str(b / rel_sub) for b in candidates]
+            searched = [str((b / rel_sub).resolve(strict=False)) for b in candidates]
             raise FileNotFoundError(
                 f"Game file not found. Searched:\n  " + "\n  ".join(searched)
             )
-        spec = importlib.util.spec_from_loader(game_prefix, loader=None)
+        module_name = f"{game_prefix}_{game_hash}" if game_hash else game_prefix
+        spec = importlib.util.spec_from_file_location(module_name, game_file)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Unable to load module spec from {game_file}")
         module = importlib.util.module_from_spec(spec)
-        with open(game_file) as f:
-            exec(f.read(), module.__dict__)
+        spec.loader.exec_module(module)
         game_cls = getattr(module, class_name)
         clone = game_cls()
         clone.perform_action(ActionInput(id=GameAction.RESET), raw=True)
