@@ -739,36 +739,8 @@ class SolverAgent(Agent):
                 f"Unsupported game_id format: {self.game_id!r}. "
                 "Expected 'ls20' or 'ls20-<hash>'."
             )
-        game_prefix = match.group(1)  # e.g. "ls20"
-        game_hash = (match.group(2) or "").lower()  # normalize hash directory/module suffix
-        # Derive class name: "ls20" → "Ls20"
-        class_name = game_prefix[0].upper() + game_prefix[1:]
-        rel_sub = pathlib.Path(game_prefix) / game_hash / f"{game_prefix}.py"
-        # Search candidate base dirs in priority order
-        here = pathlib.Path(__file__).parent  # agents/templates/
-        candidates = [
-            pathlib.Path(envs_dir),                          # absolute or cwd-relative
-            here.parent.parent / envs_dir,                  # repo-root / envs_dir
-            here.parent.parent.parent / envs_dir,           # parent-of-repo / envs_dir
-        ]
-        game_file = None
-        for base in candidates:
-            base_resolved = base.resolve(strict=False)
-            p = base_resolved / rel_sub
-            if not p.exists():
-                continue
-            try:
-                resolved_game_file = p.resolve(strict=True)
-                resolved_game_file.relative_to(base_resolved)
-            except (FileNotFoundError, ValueError):
-                continue
-            game_file = resolved_game_file
-            break
-        if game_file is None:
-            searched = [str((b / rel_sub).resolve(strict=False)) for b in candidates]
-            raise FileNotFoundError(
-                f"Game file not found. Searched:\n  " + "\n  ".join(searched)
-            )
+        game_prefix, game_hash, class_name = self._parse_game_id()
+        game_file = self._resolve_game_file(envs_dir, game_prefix, game_hash)
         module_name = f"{game_prefix}_{game_hash}" if game_hash else game_prefix
         spec = importlib.util.spec_from_file_location(module_name, game_file)
         if spec is None or spec.loader is None:
@@ -779,6 +751,46 @@ class SolverAgent(Agent):
         clone = game_cls()
         clone.perform_action(ActionInput(id=GameAction.RESET), raw=True)
         return _precompute_actions(clone)
+
+    def _parse_game_id(self) -> tuple[str, str, str]:
+        match = re.fullmatch(r"([a-z]{2}\d+)(?:-([0-9a-f]+))?", self.game_id)
+        if match is None:
+            raise ValueError(
+                f"Unsupported game_id format: {self.game_id!r}. "
+                "Expected 'ls20' or 'ls20-<hash>'."
+            )
+        game_prefix = match.group(1)
+        game_hash = (match.group(2) or "").lower()
+        class_name = game_prefix[0].upper() + game_prefix[1:]
+        return game_prefix, game_hash, class_name
+
+    def _resolve_game_file(self, envs_dir: str, game_prefix: str, game_hash: str) -> pathlib.Path:
+        rel_sub = pathlib.Path(game_prefix) / game_hash / f"{game_prefix}.py"
+        here = pathlib.Path(__file__).parent  # agents/templates/
+        candidates = [
+            pathlib.Path(envs_dir),                          # absolute or cwd-relative
+            here.parent.parent / envs_dir,                  # repo-root / envs_dir
+            here.parent.parent.parent / envs_dir,           # parent-of-repo / envs_dir
+        ]
+        searched: list[str] = []
+        for base in candidates:
+            base_resolved = base.resolve(strict=False)
+            candidate = base_resolved / rel_sub
+            searched.append(str(candidate.resolve(strict=False)))
+            if not candidate.exists():
+                continue
+            resolved_game_file = candidate.resolve(strict=True)
+            try:
+                resolved_game_file.relative_to(base_resolved)
+            except ValueError as exc:
+                raise ValueError(
+                    f"Resolved game file escapes base directory: {resolved_game_file} "
+                    f"(base: {base_resolved})"
+                ) from exc
+            return resolved_game_file
+        raise FileNotFoundError(
+            f"Game file not found. Searched:\n  " + "\n  ".join(searched)
+        )
 
     def choose_action(self, frames: list[FrameData], current_frame: FrameData) -> GameAction:
         if current_frame.state in (GameState.NOT_PLAYED, GameState.GAME_OVER):
