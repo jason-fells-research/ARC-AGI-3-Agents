@@ -186,6 +186,8 @@ def _plan_segment(game: Any, start: _Pos, goal: _Pos, sc_val: int,
                 best = (p1 + p2, sc_after, cell)
     if best:
         return best
+    if sa <= 0:
+        return None, sc_val, None
     return direct, sa, None
 
 
