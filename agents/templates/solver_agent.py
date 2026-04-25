@@ -333,6 +333,11 @@ def _best_plan(game, exits_subset, pickups, start, sc_init, r0, c0, s0, push_map
     return best_moves, best_sc, best_order
 
 
+def _rects_overlap(ax, ay, aw, ah, bx, by, bw, bh):
+    """Return True if rectangle A and rectangle B overlap."""
+    return ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah
+
+
 def _bfs_moving_triggers(game):
     """Time-expanded BFS for levels with moving trigger sprites.
 
@@ -401,13 +406,10 @@ def _bfs_moving_triggers(game):
     pu_cells = []
     sorted_passable = sorted(all_passable)
     for sp in pu_sprites:
-        sp_x1, sp_y1 = sp.x, sp.y
-        sp_x2 = sp_x1 + getattr(sp, 'width', STEP)
-        sp_y2 = sp_y1 + getattr(sp, 'height', STEP)
+        sp_w = getattr(sp, 'width', getattr(sp, 'w', STEP))
+        sp_h = getattr(sp, 'height', getattr(sp, 'h', STEP))
         for pos in sorted_passable:
-            cell_x2 = pos[0] + STEP
-            cell_y2 = pos[1] + STEP
-            if pos[0] < sp_x2 and cell_x2 > sp_x1 and pos[1] < sp_y2 and cell_y2 > sp_y1:
+            if _rects_overlap(sp.x, sp.y, sp_w, sp_h, pos[0], pos[1], STEP, STEP):
                 pu_cells.append(pos)
                 break
 
