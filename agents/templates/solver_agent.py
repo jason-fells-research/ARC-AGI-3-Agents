@@ -28,14 +28,21 @@ _AM = {
     'LEFT': GameAction.ACTION3, 'RIGHT': GameAction.ACTION4,
 }
 
+# Type aliases used throughout solver helpers
+_Pos = tuple[int, int]
+_Step = tuple[str, int, int]
+_PushMap = dict[_Pos, _Pos]
+_WallSet = set[_Pos] | None
+_Pickup = dict[str, Any]
+
 
 # ── Solver helpers ─────────────────────────────────────────────────────────────
 
-def _is_wall(game, x, y):
+def _is_wall(game: Any, x: int, y: int) -> bool:
     return any('ihdgageizm' in s.tags for s in game.mrznumynfe(x, y, STEP, STEP))
 
 
-def _build_push_map(game, start):
+def _build_push_map(game: Any, start: _Pos) -> _PushMap:
     platforms = game.current_level.get_sprites_by_tag("gbvqrjtaqo")
     if not platforms:
         return {}
@@ -78,7 +85,9 @@ def _build_push_map(game, start):
     return push_map
 
 
-def _bfs_path(game, start, goal, push_map=None, extra_walls=None):
+def _bfs_path(game: Any, start: _Pos, goal: _Pos,
+              push_map: _PushMap | None = None,
+              extra_walls: _WallSet = None) -> list[_Step] | None:
     if start == goal:
         return []
     queue = deque([(start, [])])
@@ -113,7 +122,7 @@ def _bfs_path(game, start, goal, push_map=None, extra_walls=None):
     return None
 
 
-def _find_pickup_cells(game, start):
+def _find_pickup_cells(game: Any, start: _Pos) -> list[_Pickup]:
     pickups = game.current_level.get_sprites_by_tag("npxgalaybz")
     ox, oy = start[0] % STEP, start[1] % STEP
     xs = [ox + STEP * i for i in range(12) if ox + STEP * i <= 59]
@@ -129,7 +138,9 @@ def _find_pickup_cells(game, start):
     return result
 
 
-def _can_reach_pickup(game, pos, sc_val, pickups, push_map, extra_walls=None, sc_step=2):
+def _can_reach_pickup(game: Any, pos: _Pos, sc_val: int, pickups: list[_Pickup],
+                      push_map: _PushMap, extra_walls: _WallSet = None,
+                      sc_step: int = 2) -> bool:
     max_moves = (sc_val - 1) // sc_step
     if max_moves < 0:
         return False
@@ -141,7 +152,10 @@ def _can_reach_pickup(game, pos, sc_val, pickups, push_map, extra_walls=None, sc
     return False
 
 
-def _plan_segment(game, start, goal, sc_val, pickups, push_map, extra_walls=None, sc_step=2):
+def _plan_segment(game: Any, start: _Pos, goal: _Pos, sc_val: int,
+                  pickups: list[_Pickup], push_map: _PushMap,
+                  extra_walls: _WallSet = None,
+                  sc_step: int = 2) -> tuple[list[_Step] | None, int, _Pos | None]:
     direct = _bfs_path(game, start, goal, push_map, extra_walls)
     if direct is None:
         return None, sc_val, None
@@ -175,7 +189,8 @@ def _plan_segment(game, start, goal, sc_val, pickups, push_map, extra_walls=None
     return direct, sa, None
 
 
-def _get_neighbors(game, pos, push_map, extra_walls=None):
+def _get_neighbors(game: Any, pos: _Pos, push_map: _PushMap,
+                   extra_walls: _WallSet = None) -> list[_Step]:
     x, y = pos
     result = []
     for nm, dx, dy in [('UP', 0, -STEP), ('DOWN', 0, STEP), ('LEFT', -STEP, 0), ('RIGHT', STEP, 0)]:
@@ -195,13 +210,16 @@ def _get_neighbors(game, pos, push_map, extra_walls=None):
     return result
 
 
-def _remove_pickup(pickups, cell):
+def _remove_pickup(pickups: list[_Pickup], cell: _Pos) -> list[_Pickup]:
     return [p for p in pickups if cell not in p['cells']]
 
 
-def _plan_for_ordering(game, trigger_order, exits, pickups_init, start, sc_init,
-                       r0, c0, s0, push_map, trigger_pickups=None, extra_walls=None,
-                       exit_indices=None, sc_step=2):
+def _plan_for_ordering(game: Any, trigger_order: tuple[str, ...],
+                       exits: list[Any], pickups_init: list[_Pickup],
+                       start: _Pos, sc_init: int, r0: int, c0: int, s0: int,
+                       push_map: _PushMap, trigger_pickups: list[_Pickup] | None = None,
+                       extra_walls: _WallSet = None, exit_indices: list[int] | None = None,
+                       sc_step: int = 2) -> tuple[list[_Step], int] | None:
     moves = []
     cur = start
     sc_val = sc_init
@@ -287,7 +305,7 @@ def _plan_for_ordering(game, trigger_order, exits, pickups_init, start, sc_init,
     return moves, sc_val
 
 
-def _get_start_triggers(game):
+def _get_start_triggers(game: Any) -> tuple[int, int, int]:
     sr = game.current_level.get_data("StartRotation")
     sc = game.current_level.get_data("StartColor")
     ss = game.current_level.get_data("StartShape")
@@ -297,8 +315,11 @@ def _get_start_triggers(game):
     return r0, c0, s0
 
 
-def _best_plan(game, exits_subset, pickups, start, sc_init, r0, c0, s0, push_map,
-               extra_walls=None, exit_indices=None, sc_step=2):
+def _best_plan(game: Any, exits_subset: list[Any], pickups: list[_Pickup],
+               start: _Pos, sc_init: int, r0: int, c0: int, s0: int,
+               push_map: _PushMap, extra_walls: _WallSet = None,
+               exit_indices: list[int] | None = None,
+               sc_step: int = 2) -> tuple[list[_Step] | None, int, Any]:
     n = len(exits_subset)
     base_idx = exit_indices if exit_indices is not None else list(range(n))
     exit_perms = list(permutations(range(n))) if n <= 3 else [tuple(range(n))]
@@ -333,12 +354,13 @@ def _best_plan(game, exits_subset, pickups, start, sc_init, r0, c0, s0, push_map
     return best_moves, best_sc, best_order
 
 
-def _rects_overlap(ax, ay, aw, ah, bx, by, bw, bh):
+def _rects_overlap(ax: int, ay: int, aw: int, ah: int,
+                   bx: int, by: int, bw: int, bh: int) -> bool:
     """Return True if rectangle A and rectangle B overlap."""
     return ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah
 
 
-def _bfs_moving_triggers(game):
+def _bfs_moving_triggers(game: Any) -> dict[str, Any] | None:
     """Time-expanded BFS for levels with moving trigger sprites.
 
     State: (pos, tphase, rot, col, shp, pickup_mask, exits_visited_mask)
@@ -510,7 +532,7 @@ def _bfs_moving_triggers(game):
     return {'strategy': 'direct', 'phases': [moves]}
 
 
-def _solve_level(game, lvl_idx):
+def _solve_level(game: Any, lvl_idx: int) -> dict[str, Any] | None:
     sc_init = game._step_counter_ui.current_steps
     sc_step = game._step_counter_ui.efipnixsvl
     start = (game.gudziatsk.x, game.gudziatsk.y)
@@ -568,10 +590,33 @@ def _solve_level(game, lvl_idx):
     }
 
 
-def _precompute_actions(game):
-    """Solve all 7 levels on a game clone; return ordered list of GameActions."""
-    actions = []
-    for lvl in range(7):
+def _get_supported_level_count(game: Any) -> int:
+    """Validate that this solver is used for a supported ls20 game; return level count."""
+    game_id = getattr(game, 'game_id', None)
+    if game_id is not None and not str(game_id).startswith('ls20'):
+        msg = f"SolverAgent only supports ls20 games; got game_id={game_id!r}"
+        logger.error(msg)
+        raise ValueError(msg)
+    levels = getattr(game, 'levels', None)
+    if levels is not None:
+        try:
+            level_count = len(levels)
+        except TypeError:
+            level_count = 7
+        else:
+            if level_count != 7:
+                msg = (f"SolverAgent expects 7 levels; got {level_count}")
+                logger.error(msg)
+                raise ValueError(msg)
+            return level_count
+    return 7
+
+
+def _precompute_actions(game: Any) -> list[GameAction]:
+    """Solve all supported ls20 levels on a game clone; return ordered list of GameActions."""
+    level_count = _get_supported_level_count(game)
+    actions: list[GameAction] = []
+    for lvl in range(level_count):
         frame = None
         plan = _solve_level(game, lvl)
         if plan is None:
@@ -698,7 +743,8 @@ class SolverAgent(Agent):
 
     def choose_action(self, frames: list[FrameData], current_frame: FrameData) -> GameAction:
         if current_frame.state in (GameState.NOT_PLAYED, GameState.GAME_OVER):
-            logger.warning(f"[Solver] Game state {current_frame.state} — sending RESET")
+            logger.warning(f"[Solver] Game state {current_frame.state} — sending RESET, rewinding queue")
+            self._queue_idx = 0
             return GameAction.RESET
         if self._queue_idx < len(self._action_queue):
             action = self._action_queue[self._queue_idx]
