@@ -645,9 +645,25 @@ class SolverAgent(Agent):
         game_hash = parts[1] if len(parts) > 1 else ""  # e.g. "9607627b"
         # Derive class name: "ls20" → "Ls20"
         class_name = game_prefix[0].upper() + game_prefix[1:]
-        game_file = pathlib.Path(envs_dir) / game_prefix / game_hash / f"{game_prefix}.py"
-        if not game_file.exists():
-            raise FileNotFoundError(f"Game file not found: {game_file}")
+        rel_sub = pathlib.Path(game_prefix) / game_hash / f"{game_prefix}.py"
+        # Search candidate base dirs in priority order
+        here = pathlib.Path(__file__).parent  # agents/templates/
+        candidates = [
+            pathlib.Path(envs_dir),                          # absolute or cwd-relative
+            here.parent.parent / envs_dir,                  # repo-root / envs_dir
+            here.parent.parent.parent / envs_dir,           # parent-of-repo / envs_dir
+        ]
+        game_file = None
+        for base in candidates:
+            p = base / rel_sub
+            if p.exists():
+                game_file = p
+                break
+        if game_file is None:
+            searched = [str(b / rel_sub) for b in candidates]
+            raise FileNotFoundError(
+                f"Game file not found. Searched:\n  " + "\n  ".join(searched)
+            )
         spec = importlib.util.spec_from_loader(game_prefix, loader=None)
         module = importlib.util.module_from_spec(spec)
         with open(game_file) as f:
