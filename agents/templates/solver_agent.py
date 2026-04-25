@@ -47,7 +47,7 @@ def _build_push_map(game: Any, start: _Pos) -> _PushMap:
     if not platforms:
         return {}
 
-    def is_stop(nx, ny):
+    def is_stop(nx: int, ny: int) -> bool:
         if nx < 0 or nx > 59 or ny < 0 or ny > 59:
             return True
         return any('ihdgageizm' in s.tags or 'rjlbuycveu' in s.tags
@@ -620,8 +620,9 @@ def _precompute_actions(game: Any) -> list[GameAction]:
         frame = None
         plan = _solve_level(game, lvl)
         if plan is None:
-            logger.error(f"Cannot plan level {lvl}")
-            break
+            msg = f"Cannot plan level {lvl}"
+            logger.error(msg)
+            raise RuntimeError(msg)
 
         strategy = plan['strategy']
 
@@ -683,6 +684,10 @@ class SolverAgent(Agent):
             logger.info(f"[Solver] Pre-computed {len(self._action_queue)} actions")
         except Exception as e:
             logger.error(f"[Solver] Pre-compute failed: {e}", exc_info=True)
+            raise RuntimeError(
+                f"SolverAgent initialization failed during precompute for game "
+                f"{getattr(self, 'game_id', '<unknown>')}"
+            ) from e
 
     def _precompute(self) -> list[GameAction]:
         # Local mode: arc_env._game is the live game instance
@@ -746,12 +751,17 @@ class SolverAgent(Agent):
             logger.warning(f"[Solver] Game state {current_frame.state} — sending RESET, rewinding queue")
             self._queue_idx = 0
             return GameAction.RESET
-        if self._queue_idx < len(self._action_queue):
-            action = self._action_queue[self._queue_idx]
-            self._queue_idx += 1
-            return action
-        logger.warning("[Solver] Queue exhausted — returning ACTION1 as fallback")
-        return GameAction.ACTION1
+        if not self._action_queue:
+            logger.warning("[Solver] No pre-computed actions available — sending RESET")
+            self._queue_idx = 0
+            return GameAction.RESET
+        if self._queue_idx >= len(self._action_queue):
+            logger.warning("[Solver] Queue exhausted — sending RESET and rewinding queue")
+            self._queue_idx = 0
+            return GameAction.RESET
+        action = self._action_queue[self._queue_idx]
+        self._queue_idx += 1
+        return action
 
     def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
         return latest_frame.state is GameState.WIN
