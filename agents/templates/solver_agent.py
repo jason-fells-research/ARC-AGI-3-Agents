@@ -687,17 +687,20 @@ class SolverAgent(Agent):
     """Pre-computes the full solution at init; plays back actions on demand."""
 
     MAX_ACTIONS = 800
+    ACTION_BUDGET_SAFETY_MARGIN = 1
 
     def _ensure_action_budget(self, actions: list[GameAction]) -> None:
         """Ensure the agent loop budget can execute the full precomputed plan."""
         planned_actions = len(actions)
-        if planned_actions > self.MAX_ACTIONS:
+        required_actions = planned_actions + self.ACTION_BUDGET_SAFETY_MARGIN
+        if required_actions > self.MAX_ACTIONS:
             logger.info(
-                "[Solver] Increasing MAX_ACTIONS from %s to %s to fit pre-computed plan",
+                "[Solver] Increasing MAX_ACTIONS from %s to %s to fit pre-computed plan "
+                "with safety margin",
                 self.MAX_ACTIONS,
-                planned_actions,
+                required_actions,
             )
-            self.MAX_ACTIONS = planned_actions
+            self.MAX_ACTIONS = required_actions
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
