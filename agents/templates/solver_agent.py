@@ -684,12 +684,24 @@ class SolverAgent(Agent):
 
     MAX_ACTIONS = 800
 
+    def _ensure_action_budget(self, actions: list[GameAction]) -> None:
+        """Ensure the agent loop budget can execute the full precomputed plan."""
+        planned_actions = len(actions)
+        if planned_actions > self.MAX_ACTIONS:
+            logger.info(
+                "[Solver] Increasing MAX_ACTIONS from %s to %s to fit pre-computed plan",
+                self.MAX_ACTIONS,
+                planned_actions,
+            )
+            self.MAX_ACTIONS = planned_actions
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._action_queue: list[GameAction] = []
         self._queue_idx: int = 0
         try:
             self._action_queue = self._precompute()
+            self._ensure_action_budget(self._action_queue)
             logger.info(f"[Solver] Pre-computed {len(self._action_queue)} actions")
         except Exception as e:
             logger.error(f"[Solver] Pre-compute failed: {e}", exc_info=True)
