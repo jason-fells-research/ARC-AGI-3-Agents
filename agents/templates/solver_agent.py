@@ -555,8 +555,8 @@ def _solve_level(game: Any, lvl_idx: int) -> dict[str, Any] | None:
             return result
         logger.warning(f"BFS solver failed for level {lvl_idx}, falling back to static")
 
-    best_moves, best_sc, best_order = _best_plan(game, exits, pickups, start, sc_init,
-                                                  r0, c0, s0, push_map, sc_step=sc_step)
+    best_moves, best_sc, _ = _best_plan(game, exits, pickups, start, sc_init,
+                                        r0, c0, s0, push_map, sc_step=sc_step)
     if len(exits) == 1:
         if best_moves is not None:
             return {'strategy': 'direct', 'phases': [best_moves]}
