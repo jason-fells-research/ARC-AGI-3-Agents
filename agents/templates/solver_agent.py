@@ -562,7 +562,7 @@ def _solve_level(game: Any, lvl_idx: int) -> dict[str, Any] | None:
             return {'strategy': 'direct', 'phases': [best_moves]}
         return None
 
-    if best_moves and best_sc >= sc_step:
+    if best_moves is not None and best_sc >= sc_step:
         return {'strategy': 'direct', 'phases': [best_moves]}
 
     direct_fallback = best_moves if best_sc > -200 else None
