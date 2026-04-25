@@ -702,11 +702,17 @@ class SolverAgent(Agent):
         import importlib.util
         import os
         import pathlib
+        import re
         envs_dir = os.getenv("ENVIRONMENTS_DIR", "environment_files")
-        # game_id format: "ls20-9607627b"
-        parts = self.game_id.split("-", 1)
-        game_prefix = parts[0]   # e.g. "ls20"
-        game_hash = parts[1] if len(parts) > 1 else ""  # e.g. "9607627b"
+        # Supported game_id formats: "ls20" or "ls20-9607627b"
+        match = re.fullmatch(r"(ls20)(?:-([0-9a-fA-F]+))?", self.game_id)
+        if match is None:
+            raise ValueError(
+                f"Unsupported game_id format: {self.game_id!r}. "
+                "Expected 'ls20' or 'ls20-<hash>'."
+            )
+        game_prefix = match.group(1)  # e.g. "ls20"
+        game_hash = match.group(2) or ""  # e.g. "9607627b"
         # Derive class name: "ls20" → "Ls20"
         class_name = game_prefix[0].upper() + game_prefix[1:]
         rel_sub = pathlib.Path(game_prefix) / game_hash / f"{game_prefix}.py"
