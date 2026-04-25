@@ -664,7 +664,14 @@ def _precompute_actions(game: Any) -> list[GameAction]:
                 if frame.levels_completed > lvl or frame.state == GameState.WIN:
                     break
 
-        if frame is not None and frame.state == GameState.WIN:
+        if frame is None or (
+            frame.levels_completed <= lvl and frame.state != GameState.WIN
+        ):
+            msg = f"Planned actions did not complete level {lvl}"
+            logger.error(msg)
+            raise RuntimeError(msg)
+
+        if frame.state == GameState.WIN:
             break
 
     return actions
