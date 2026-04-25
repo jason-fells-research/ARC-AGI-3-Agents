@@ -27,7 +27,7 @@ AVAILABLE_AGENTS: dict[str, Type[Agent]] = {
 for rec in Recorder.list():
     AVAILABLE_AGENTS[rec] = Playback
 
-# update the agent dictionary to include subclasses of LLM class
+# manually register agent aliases/overrides that are not added automatically
 AVAILABLE_AGENTS["reasoningagent"] = ReasoningAgent
 AVAILABLE_AGENTS["solveragent"] = SolverAgent
 
