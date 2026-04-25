@@ -38,8 +38,9 @@ MAX_ACTIONS = 400
 MSG_HISTORY_LIMIT = 4
 LLM_CALL_INTERVAL = 4.0  # seconds between LLM calls
 
-# --- API credentials ---
-PPLX_KEY = "PPLX_KEY_REMOVED"
+# --- API credentials (set via environment variables) ---
+import os
+PPLX_KEY = os.getenv("PPLX_API_KEY", "")
 PPLX_MODEL = "sonar-pro"
 PPLX_URL = "https://api.perplexity.ai/chat/completions"
 
@@ -47,11 +48,11 @@ GEMINI_MODEL = "gemini-2.5-flash"
 GEMINI_API_BASE = (
     f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 )
-GEMINI_KEYS = [
-    "GEMINI_KEY_1_REMOVED",
-    "GEMINI_KEY_2_REMOVED",
-    "GEMINI_KEY_3_REMOVED",
-]
+GEMINI_KEYS = [k for k in [
+    os.getenv("GEMINI_API_KEY_1", ""),
+    os.getenv("GEMINI_API_KEY_2", ""),
+    os.getenv("GEMINI_API_KEY_3", ""),
+] if k]
 
 # Rendering colors
 COLOR_PALETTE = {
