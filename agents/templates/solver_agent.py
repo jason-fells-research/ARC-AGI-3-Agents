@@ -740,7 +740,7 @@ class SolverAgent(Agent):
                 "Expected 'ls20' or 'ls20-<hash>'."
             )
         game_prefix = match.group(1)  # e.g. "ls20"
-        game_hash = match.group(2) or ""  # e.g. "9607627b"
+        game_hash = (match.group(2) or "").lower()  # normalize hash directory/module suffix
         # Derive class name: "ls20" → "Ls20"
         class_name = game_prefix[0].upper() + game_prefix[1:]
         rel_sub = pathlib.Path(game_prefix) / game_hash / f"{game_prefix}.py"
