@@ -129,9 +129,11 @@ def _find_pickup_cells(game: Any, start: _Pos) -> list[_Pickup]:
     ys = [oy + STEP * i for i in range(12) if oy + STEP * i <= 59]
     result = []
     for sp in pickups:
+        sp_width = getattr(sp, 'width', getattr(sp, 'w', STEP))
+        sp_height = getattr(sp, 'height', getattr(sp, 'h', STEP))
         cells = [(gx, gy) for gx in xs for gy in ys
-                 if gx < sp.x + sp.width and gx + STEP > sp.x
-                 and gy < sp.y + sp.height and gy + STEP > sp.y
+                 if gx < sp.x + sp_width and gx + STEP > sp.x
+                 and gy < sp.y + sp_height and gy + STEP > sp.y
                  and not _is_wall(game, gx, gy)]
         if cells:
             result.append({'sprite': (sp.x, sp.y), 'cells': cells})
